@@ -1,0 +1,79 @@
+module spi_slave #(parameter DATA_WIDTH=8, COUNT_WIDTH=4
+) (input rst,spi_clk, spi_mosi,spi_cs,
+input [DATA_WIDTH-1:0]parallel_data,
+output reg spi_miso,
+output reg [DATA_WIDTH-1:0]rx_data,
+output reg data_received
+);
+
+reg [DATA_WIDTH-1:0] rx_shift_reg;
+reg [DATA_WIDTH-1:0]tx_shift_reg;
+reg [COUNT_WIDTH-1:0]rx_bit_count;
+reg [COUNT_WIDTH-1:0]tx_bit_count;
+reg tx_started;
+
+//RECEIVING DATA FROM MASTER
+always @(posedge spi_clk or posedge spi_cs or negedge rst) begin
+	if(!rst) begin
+		rx_shift_reg <= {DATA_WIDTH{1'b0}};
+		rx_bit_count <=0;
+		rx_data <= {DATA_WIDTH{1'b0}};
+		data_received <= 1'b0;
+		tx_started<=0;
+	end
+
+	else if(spi_cs) begin
+		
+		rx_shift_reg <= {DATA_WIDTH{1'b0}};
+		rx_bit_count <=0;
+		data_received <= 1'b0;
+	end
+
+	else begin
+		data_received <=0;
+	//	if (rx_bit_count < DATA_WIDTH) begin
+			rx_shift_reg <={rx_shift_reg[DATA_WIDTH-2:0], spi_mosi};
+						
+			if(rx_bit_count==DATA_WIDTH-1) begin
+				rx_data <= {rx_shift_reg[DATA_WIDTH-2:0], spi_mosi};
+				data_received<=1'b1;
+				rx_bit_count <=0;
+			end
+			else begin
+			rx_bit_count<=rx_bit_count + 1'b1; 
+
+		end
+	end
+end
+
+//TRANSMITTING DATA TO MASTER
+
+always @(negedge rst or negedge spi_clk or posedge spi_cs or negedge spi_cs) begin
+	if(!rst) begin
+		tx_bit_count<= {DATA_WIDTH{1'b0}};
+		tx_shift_reg<=0;
+		spi_miso <= 1'b0;
+	end
+
+	else if(spi_cs) begin
+		tx_shift_reg <= {DATA_WIDTH{1'b0}};
+		tx_bit_count <=0;
+		spi_miso <= 1'b0;
+	end
+
+	else if(!tx_started) begin
+		tx_shift_reg <= parallel_data;
+		tx_bit_count <= 1;
+		spi_miso <= parallel_data[DATA_WIDTH-1];
+		tx_started=1;
+	end
+
+	else begin
+		if(tx_bit_count < DATA_WIDTH) begin
+			tx_shift_reg <= {tx_shift_reg[DATA_WIDTH-2:0],1'b0};
+			spi_miso <= tx_shift_reg[DATA_WIDTH-2];
+			tx_bit_count <= tx_bit_count + 1'b1;
+		end
+	end
+end
+endmodule

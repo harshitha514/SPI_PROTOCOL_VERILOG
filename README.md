@@ -86,22 +86,6 @@ HDL: Verilog
 
 Simulation Tool: QuestaSim
 
-📂 Project Structure
-
-SPI-Protocol/
-│
-├── rtl/
-│   ├── spi_master.v
-│   └── spi_slave.v
-│
-├── testbench/
-│   └── spi_tb.v
-│
-├── simulation/
-│   └── run.do
-│
-└── README.md
-
 🧪 Verification and Testing
 
 The SPI Master and Slave modules are verified through simulation using a Verilog testbench.
